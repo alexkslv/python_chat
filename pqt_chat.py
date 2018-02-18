@@ -4,7 +4,7 @@ import sys
 from PyQt5.QtWidgets import (qApp, QWidget, QLabel, QLineEdit, QMessageBox,
     QTextEdit, QGridLayout, QApplication, QDesktopWidget, QMainWindow, QAction, QPushButton)
 from PyQt5.QtCore import QEvent
-from PyQt5.QtGui import QIcon, QTextCursor, QCloseEvent
+from PyQt5.QtGui import QIcon, QTextCursor, QCloseEvent, QImage
 
 import chat_config
 
@@ -24,16 +24,49 @@ class Chat(QMainWindow):
         btnSendMess = QPushButton('Send', self)
         btnSendMess.clicked.connect(lambda: self._do_action('button', 'Send'))
 
-        action_textBold = self._connect_action(QIcon(chat_config.text_bold_icon), 'Bold', '', 'Bold text',
+        action_textBold = self._connect_action(QIcon(chat_config.text_bold_icon),
+                                               'Bold',
+                                               '',
+                                               'Bold text',
                                                lambda: self._do_action('text', 'b'))
-        action_textBias = self._connect_action(QIcon(chat_config.text_bias_icon), 'Bias', '', 'Bold text',
+
+        action_textBias = self._connect_action(QIcon(chat_config.text_bias_icon),
+                                               'Bias',
+                                               '',
+                                               'Bias text',
                                                lambda: self._do_action('text', 'i'))
-        action_textUnder = self._connect_action(QIcon(chat_config.text_underline_icon), 'Under','', 'Bold text',
+
+        action_textUnder = self._connect_action(QIcon(chat_config.text_underline_icon),
+                                                'Under',
+                                                '',
+                                                'Under text',
                                                lambda: self._do_action('text', 'u'))
 
-        action_exit     = self._connect_action(QIcon(chat_config.app_exit_icon),  '&Exit', 'Ctrl+Q', 'Exit app', self.close)
+        action_smileSimple = self._connect_action(QIcon(chat_config.smile_simple_icon),
+                                               '',
+                                               '',
+                                               'Simple smile',
+                                               lambda: self._do_action('smile', chat_config.smile_simple_icon))
 
-        # В macOS почему-то при добавлении меню, окно приложения перестает центрироваться(
+        action_smileSaint = self._connect_action(QIcon(chat_config.smile_saint_icon),
+                                               '',
+                                               '',
+                                               'Saint smile',
+                                               lambda: self._do_action('smile', chat_config.smile_saint_icon))
+
+        action_iconHappyMac = self._connect_action(QIcon(chat_config.happy_Mac_icon),
+                                               '',
+                                               '',
+                                               'Happy Mac',
+                                               lambda: self._do_action('smile', chat_config.happy_Mac_icon))
+
+        action_exit = self._connect_action(QIcon(chat_config.app_exit_icon),
+                                               '&Exit',
+                                               'Ctrl+Q',
+                                               'Exit app',
+                                                self.close)
+
+        # В macOS, почему-то, при добавлении меню, окно приложения перестает центрироваться(
         # В Windows же все Ok
         # menubar = self.menuBar()
         # fileMenu = menubar.addMenu('&File')
@@ -43,6 +76,10 @@ class Chat(QMainWindow):
         self.toolbar.addAction(action_textBold)
         self.toolbar.addAction(action_textBias)
         self.toolbar.addAction(action_textUnder)
+        self.toolbar.addSeparator()
+        self.toolbar.addAction(action_smileSimple)
+        self.toolbar.addAction(action_smileSaint)
+        self.toolbar.addAction(action_iconHappyMac)
         self.toolbar.addSeparator()
         self.toolbar.addAction(action_exit)
 
@@ -69,7 +106,7 @@ class Chat(QMainWindow):
             selected_text = self.messageEdit.textCursor().selectedText()
             self.messageEdit.textCursor().insertHtml('<{t}>{text}</{t}>'.format(text=selected_text, t=v))
         if kind == 'smile':
-            pass
+            self.messageEdit.textCursor().insertHtml('<img src="%s" />' % v)
         if kind == 'button':
             if v == 'Send':
                 #textBuf = self.chatView.toHtml()
@@ -95,12 +132,12 @@ class Chat(QMainWindow):
         qr.moveCenter(cp)
         self.move(qr.topLeft())
 
-    def closeEvent(self, QCloseEvent):
-        reply = QMessageBox.question(self, 'Message', 'Exit?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-        if reply == QMessageBox.Yes:
-            QCloseEvent.accept()
-        else:
-            QCloseEvent.ignore()
+    # def closeEvent(self, QCloseEvent):
+    #     reply = QMessageBox.question(self, 'Message', 'Exit?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+    #     if reply == QMessageBox.Yes:
+    #         QCloseEvent.accept()
+    #     else:
+    #         QCloseEvent.ignore()
 
 
 if __name__ == '__main__':
