@@ -11,3 +11,5 @@ smile_simple_icon   = 'icons/smile_simple.png'
 smile_saint_icon    = 'icons/smile_saint.png'
 
 happy_Mac_icon      = 'icons/icon_happy_mac.png'
+
+file_open_icon      = 'icons/open_file.png'

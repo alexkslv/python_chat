@@ -1,12 +1,17 @@
 import obyasnitelnaya
 
 import sys
-from PyQt5.QtWidgets import (qApp, QWidget, QLabel, QLineEdit, QMessageBox,
+from PyQt5.QtWidgets import (qApp, QWidget, QLabel, QLineEdit, QMessageBox, QFileDialog,
     QTextEdit, QGridLayout, QApplication, QDesktopWidget, QMainWindow, QAction, QPushButton)
-from PyQt5.QtCore import QEvent
-from PyQt5.QtGui import QIcon, QTextCursor, QCloseEvent, QImage
+from PyQt5.QtGui import QIcon, QTextCursor, QCloseEvent, QImage, QPixmap
+
+from PIL import Image, ImageDraw
+from PIL.ImageQt import ImageQt
 
 import chat_config
+from chat_db_add_img import db_add_image
+from chat_img_from_db import image_from_db
+
 
 class Chat(QMainWindow):
     def __init__(self, x_size=550, y_size=450, title='Chat'):
@@ -21,8 +26,8 @@ class Chat(QMainWindow):
         self.messageEdit = QTextEdit()
         #self.messageEdit.returnPressed.connect(self.enterPressed)
 
-        btnSendMess = QPushButton('Send', self)
-        btnSendMess.clicked.connect(lambda: self._do_action('button', 'Send'))
+        self.btnSendMess = QPushButton('Send', self)
+        self.btnSendMess.clicked.connect(lambda: self._do_action('button', 'Send'))
 
         action_textBold = self._connect_action(QIcon(chat_config.text_bold_icon),
                                                'Bold',
@@ -60,6 +65,12 @@ class Chat(QMainWindow):
                                                'Happy Mac',
                                                lambda: self._do_action('smile', chat_config.happy_Mac_icon))
 
+        action_openFile = self._connect_action(QIcon(chat_config.file_open_icon),
+                                               '&Open',
+                                               'Ctrl+O',
+                                               'File open',
+                                                lambda: self._do_action('db',''))
+
         action_exit = self._connect_action(QIcon(chat_config.app_exit_icon),
                                                '&Exit',
                                                'Ctrl+Q',
@@ -68,9 +79,9 @@ class Chat(QMainWindow):
 
         # В macOS, почему-то, при добавлении меню, окно приложения перестает центрироваться(
         # В Windows же все Ok
-        # menubar = self.menuBar()
-        # fileMenu = menubar.addMenu('&File')
-        # fileMenu.addAction(action_exit)
+        menubar = self.menuBar()
+        fileMenu = menubar.addMenu('&Open')
+        fileMenu.addAction(action_openFile)
 
         self.toolbar = self.addToolBar('Main')
         self.toolbar.addAction(action_textBold)
@@ -83,11 +94,30 @@ class Chat(QMainWindow):
         self.toolbar.addSeparator()
         self.toolbar.addAction(action_exit)
 
+        self.lblAvatar = QLabel(self)
+
+        imgData = image_from_db('girl2.jpg')
+        if imgData != -1:
+            pixmap = QPixmap()
+            pixmap.loadFromData(imgData, format='JPEG')
+            self.lblAvatar.setPixmap(pixmap)
+        else:
+            try:
+                imgAvatar = Image.open('girl.jpeg')
+                imgAvatar = imgAvatar.resize((120, 100), Image.NEAREST)
+                pixmap = QPixmap.fromImage(ImageQt(imgAvatar.convert('RGBA')))
+            except FileNotFoundError:
+                self.lblAvatar.setText('No image')
+            else:
+                self.lblAvatar.setPixmap(pixmap)
+
+
         grid = QGridLayout(self._mainWidget)
         grid.setSpacing(10)
-        grid.addWidget(self.chatView, 1, 0, 3, 0)
-        grid.addWidget(self.messageEdit, 4, 0)
-        grid.addWidget(btnSendMess, 5, 0)
+        grid.addWidget(self.chatView, 1, 1)
+        grid.addWidget(self.messageEdit, 2, 1)
+        grid.addWidget(self.btnSendMess, 3, 1)
+        grid.addWidget(self.lblAvatar, 1, 0)
 
         self.resize(x_size, y_size)
         self.setWindowTitle(title)
@@ -102,6 +132,8 @@ class Chat(QMainWindow):
         return _connect
 
     def _do_action(self, kind, v):
+        if kind == 'db':
+            self.showDialog()
         if kind == 'text':
             selected_text = self.messageEdit.textCursor().selectedText()
             self.messageEdit.textCursor().insertHtml('<{t}>{text}</{t}>'.format(text=selected_text, t=v))
@@ -116,6 +148,12 @@ class Chat(QMainWindow):
                 self.messageEdit.selectAll()
                 # self.messageEdit.cut()
                 self.messageEdit.clear()
+
+    def showDialog(self):
+        fname = QFileDialog.getOpenFileName(self, 'Open file', '')[0]
+        with open(fname, 'rb') as f:
+            data = f.read()
+            db_add_image(fname.split('/').pop(), data)
 
     def showEvent(self, e):
         self.messageEdit.setFocus()
@@ -132,12 +170,12 @@ class Chat(QMainWindow):
         qr.moveCenter(cp)
         self.move(qr.topLeft())
 
-    # def closeEvent(self, QCloseEvent):
-    #     reply = QMessageBox.question(self, 'Message', 'Exit?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-    #     if reply == QMessageBox.Yes:
-    #         QCloseEvent.accept()
-    #     else:
-    #         QCloseEvent.ignore()
+    def closeEvent(self, QCloseEvent):
+        reply = QMessageBox.question(self, 'Message', 'Exit?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            QCloseEvent.accept()
+        else:
+            QCloseEvent.ignore()
 
 
 if __name__ == '__main__':
